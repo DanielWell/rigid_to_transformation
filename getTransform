@@ -1,0 +1,59 @@
+
+void estimateRigid2D(cv::Point2f* srcPoints, cv::Point2f* dstPoints, int pointsNum, TRigidTrans2D& transform)
+{
+	double srcSumX = 0.0f;
+	double srcSumY = 0.0f;
+ 
+	double dstSumX = 0.0f;
+	double dstSumY = 0.0f;
+ 
+	for (int i = 0; i < pointsNum; ++ i)
+	{
+		srcSumX += srcPoints[i].x;
+		srcSumY += srcPoints[i].y;
+ 
+		dstSumX += dstPoints[i].x;
+		dstSumY += dstPoints[i].y;
+	}
+ 
+	cv::Point2f centerSrc, centerDst;
+ 
+	centerSrc.x = float(srcSumX / pointsNum);
+	centerSrc.y = float(srcSumY / pointsNum);
+ 
+	centerDst.x = float(dstSumX / pointsNum);
+	centerDst.y = float(dstSumY / pointsNum);
+ 
+	cv::Mat srcMat(2, pointsNum, CV_64FC1);
+	cv::Mat dstMat(2, pointsNum, CV_64FC1);
+ 
+	double* srcDat = (double*)(srcMat.data);
+	double* dstDat = (double*)(dstMat.data);
+	for (int i = 0; i < pointsNum; ++ i)
+	{
+		srcDat[i] = srcPoints[i].x - centerSrc.x;
+		srcDat[pointsNum + i] = srcPoints[i].y - centerSrc.y;
+ 
+		dstDat[i] = dstPoints[i].x - centerDst.x;
+		dstDat[pointsNum + i] = dstPoints[i].y - centerDst.y;
+	}
+ 
+	cv::Mat matS = srcMat * dstMat.t();//Homography matrix
+ 
+	cv::Mat matU, matW, matV;
+	cv::SVDecomp(matS, matW, matU, matV);
+ 
+	cv::Mat matTemp = matU * matV;
+	double det = cv::determinant(matTemp);
+ 
+	double datM[] = {1, 0, 0, det};
+	cv::Mat matM(2, 2, CV_64FC1, datM);
+ 
+	cv::Mat matR = matV.t() * matM * matU.t();
+ 
+	memcpy(transform.matR, matR.data, sizeof(double) * 4);
+ 
+	double* datR = (double*)(matR.data);
+	transform.X = centerDst.x - (centerSrc.x * datR[0] + centerSrc.y * datR[1]);
+	transform.Y = centerDst.y - (centerSrc.x * datR[2] + centerSrc.y * datR[3]);
+}
