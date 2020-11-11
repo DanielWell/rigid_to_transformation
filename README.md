@@ -12,3 +12,4 @@ Where R, t are the transformations applied to dataset a to align them with datas
 3. Find the translation t
 
 picture:
+![image](https://github.com/xxx/xx.png)
